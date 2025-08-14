@@ -211,10 +211,10 @@ export function CartPage() {
                       </div>
                       <div className="text-right">
                         <div className="text-xl font-bold text-gray-900">
-                          ${getItemPrice(item) * item.quantity}
+                          Rs. {getItemPrice(item) * item.quantity}
                         </div>
                         <div className="text-sm text-gray-500">
-                          ${getItemPrice(item)} each
+                          Rs. {getItemPrice(item)} each
                         </div>
                       </div>
                     </div>
@@ -259,17 +259,17 @@ export function CartPage() {
             <div className="space-y-3 border-b border-gray-200 pb-4 mb-4">
               <div className="flex justify-between">
                 <span className="text-gray-600">Subtotal</span>
-                <span className="font-medium">${subtotal.toFixed(2)}</span>
+                <span className="font-medium">Rs. {subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Taxes & Fees</span>
-                <span className="font-medium">${tax.toFixed(2)}</span>
+                <span className="font-medium">Rs. {tax.toFixed(2)}</span>
               </div>
             </div>
 
             <div className="flex justify-between text-xl font-bold text-gray-900 mb-6">
               <span>Total</span>
-              <span>${total.toFixed(2)}</span>
+              <span>Rs. {total.toFixed(2)}</span>
             </div>
 
             <div className="space-y-3">

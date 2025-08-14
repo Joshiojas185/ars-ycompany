@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
-import { User, CartItem, Booking, SearchCriteria } from '../types';
+import { User, CartItem, Booking, SearchCriteria, Company, ContentConfiguration, RebookingRequest, Flight } from '../types';
 import { mockUsers } from '../data/mockUsers';
+import { mockCompanies } from '../data/mockCompanies';
+import { contentConfigurations } from '../data/contentConfig';
 
 interface AppState {
   currentUser: User | null;
@@ -9,6 +11,10 @@ interface AppState {
   searchCriteria: SearchCriteria | null;
   selectedAirline: string;
   notifications: Notification[];
+  companies: Company[];
+  contentConfig: ContentConfiguration[];
+  rebookingRequests: RebookingRequest[];
+  customFlights: Flight[];
 }
 
 interface Notification {
@@ -26,10 +32,20 @@ type AppAction =
   | { type: 'UPDATE_CART_QUANTITY'; payload: { id: string; quantity: number } }
   | { type: 'CLEAR_CART' }
   | { type: 'ADD_BOOKING'; payload: Booking }
+  | { type: 'CANCEL_BOOKING'; payload: string }
+  | { type: 'REBOOK_BOOKING'; payload: { originalId: string; newBooking: Booking } }
+  | { type: 'ADD_REBOOKING_REQUEST'; payload: RebookingRequest }
+  | { type: 'UPDATE_REBOOKING_REQUEST'; payload: { id: string; status: string; processedAt?: string } }
   | { type: 'SET_SEARCH_CRITERIA'; payload: SearchCriteria }
   | { type: 'SET_AIRLINE'; payload: string }
   | { type: 'ADD_NOTIFICATION'; payload: Omit<Notification, 'id' | 'timestamp'> }
   | { type: 'MARK_NOTIFICATION_READ'; payload: string }
+  | { type: 'UPDATE_CONTENT_CONFIG'; payload: { key: string; value: string; updatedBy: string } }
+  | { type: 'ADD_CONTENT_CONFIG'; payload: ContentConfiguration }
+  | { type: 'REMOVE_CONTENT_CONFIG'; payload: string }
+  | { type: 'UPDATE_COMPANY'; payload: Company }
+  | { type: 'ADD_CUSTOM_FLIGHT'; payload: Flight }
+  | { type: 'UPDATE_CUSTOM_FLIGHT'; payload: Flight }
   | { type: 'LOAD_STATE'; payload: Partial<AppState> };
 
 const initialState: AppState = {
@@ -39,6 +55,10 @@ const initialState: AppState = {
   searchCriteria: null,
   selectedAirline: 'YCompany',
   notifications: [],
+  companies: mockCompanies,
+  contentConfig: contentConfigurations,
+  rebookingRequests: [],
+  customFlights: [],
 };
 
 const AppContext = createContext<{
@@ -65,6 +85,27 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, cart: [] };
     case 'ADD_BOOKING':
       return { ...state, bookings: [...state.bookings, action.payload] };
+    case 'CANCEL_BOOKING':
+      return {
+        ...state,
+        bookings: state.bookings.filter(booking => booking.id !== action.payload),
+      };
+    case 'REBOOK_BOOKING':
+      return {
+        ...state,
+        bookings: state.bookings.map(booking =>
+          booking.id === action.payload.originalId ? action.payload.newBooking : booking
+        ),
+      };
+    case 'ADD_REBOOKING_REQUEST':
+      return { ...state, rebookingRequests: [...state.rebookingRequests, action.payload] };
+    case 'UPDATE_REBOOKING_REQUEST':
+      return {
+        ...state,
+        rebookingRequests: state.rebookingRequests.map(req =>
+          req.id === action.payload.id ? { ...req, status: action.payload.status as 'pending' | 'confirmed' | 'rejected', processedAt: action.payload.processedAt } : req
+        ),
+      };
     case 'SET_SEARCH_CRITERIA':
       return { ...state, searchCriteria: action.payload };
     case 'SET_AIRLINE':
@@ -73,8 +114,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
       const notification: Notification = {
         id: Math.random().toString(36).substr(2, 9),
         timestamp: new Date().toISOString(),
-        read: false,
         ...action.payload,
+        read: false,
       };
       return { ...state, notifications: [...state.notifications, notification] };
     case 'MARK_NOTIFICATION_READ':
@@ -83,6 +124,31 @@ function appReducer(state: AppState, action: AppAction): AppState {
         notifications: state.notifications.map(n =>
           n.id === action.payload ? { ...n, read: true } : n
         ),
+      };
+    case 'UPDATE_CONTENT_CONFIG':
+      return {
+        ...state,
+        contentConfig: state.contentConfig.map(config =>
+          config.key === action.payload.key ? { ...config, value: action.payload.value, updatedBy: action.payload.updatedBy, updatedAt: new Date().toISOString() } : config
+        ),
+      };
+    case 'ADD_CONTENT_CONFIG':
+      return { ...state, contentConfig: [...state.contentConfig, action.payload] };
+    case 'REMOVE_CONTENT_CONFIG':
+      return { ...state, contentConfig: state.contentConfig.filter(c => c.key !== action.payload) };
+    case 'UPDATE_COMPANY':
+      return {
+        ...state,
+        companies: state.companies.map(company =>
+          company.id === action.payload.id ? action.payload : company
+        ),
+      };
+    case 'ADD_CUSTOM_FLIGHT':
+      return { ...state, customFlights: [action.payload, ...state.customFlights] };
+    case 'UPDATE_CUSTOM_FLIGHT':
+      return {
+        ...state,
+        customFlights: state.customFlights.map(f => f.id === action.payload.id ? action.payload : f)
       };
     case 'LOAD_STATE':
       return { ...state, ...action.payload };
@@ -94,7 +160,6 @@ function appReducer(state: AppState, action: AppAction): AppState {
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
-  // Load state from localStorage on mount
   useEffect(() => {
     const savedState = localStorage.getItem('ycompany-app-state');
     if (savedState) {
@@ -107,7 +172,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Save state to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('ycompany-app-state', JSON.stringify(state));
   }, [state]);
@@ -127,7 +191,6 @@ export function useApp() {
   return context;
 }
 
-// Authentication functions
 export function loginUser(email: string, password: string): User | null {
   const user = mockUsers.find(u => u.email === email);
   if (user && password === 'password123') {

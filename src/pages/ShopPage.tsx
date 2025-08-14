@@ -210,7 +210,7 @@ export function ShopPage() {
 
                   <div className="flex items-center justify-between">
                     <div className="text-2xl font-bold text-purple-600">
-                      ₹{product.price}
+                      Rs. {product.price}
                     </div>
                     <div className="flex space-x-2">
                       <button

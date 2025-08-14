@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Plane, ShoppingCart, User, Bell, Menu, X } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
@@ -8,6 +8,9 @@ export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+
+  const hotelsLabel = useMemo(() => state.contentConfig.find(c => c.key === 'hotels_label')?.value || 'Hotels', [state.contentConfig]);
+  const carsLabel = useMemo(() => state.contentConfig.find(c => c.key === 'cars_label')?.value || 'Car Rentals', [state.contentConfig]);
 
   const handleLogout = () => {
     dispatch({ type: 'SET_USER', payload: null });
@@ -41,13 +44,13 @@ export function Header() {
               to="/hotels"
               className={`hover:text-blue-300 transition-colors ${isActive('/hotels') ? 'text-blue-300' : ''}`}
             >
-              Hotels
+              {hotelsLabel}
             </Link>
             <Link
               to="/cars"
               className={`hover:text-blue-300 transition-colors ${isActive('/cars') ? 'text-blue-300' : ''}`}
             >
-              Car Rentals
+              {carsLabel}
             </Link>
             <Link
               to="/shop"
@@ -67,6 +70,22 @@ export function Header() {
                 className={`hover:text-blue-300 transition-colors ${isActive('/admin') ? 'text-blue-300' : ''}`}
               >
                 Admin
+              </Link>
+            )}
+            {state.currentUser?.role === 'content_administrator' && (
+              <Link
+                to="/content"
+                className={`hover:text-blue-300 transition-colors ${isActive('/content') ? 'text-blue-300' : ''}`}
+              >
+                Content
+              </Link>
+            )}
+            {state.currentUser?.role === 'tenant_employee' && (
+              <Link
+                to="/tenant"
+                className={`hover:text-blue-300 transition-colors ${isActive('/tenant') ? 'text-blue-300' : ''}`}
+              >
+                Tenant
               </Link>
             )}
           </nav>
@@ -133,77 +152,32 @@ export function Header() {
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-blue-800">
             <nav className="flex flex-col space-y-2">
-              <Link
-                to="/flights"
-                className="py-2 px-4 hover:bg-blue-800 rounded transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Flights
-              </Link>
-              <Link
-                to="/hotels"
-                className="py-2 px-4 hover:bg-blue-800 rounded transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Hotels
-              </Link>
-              <Link
-                to="/cars"
-                className="py-2 px-4 hover:bg-blue-800 rounded transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Car Rentals
-              </Link>
-              <Link
-                to="/shop"
-                className="py-2 px-4 hover:bg-blue-800 rounded transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Shop
-              </Link>
-              <Link
-                to="/group-booking"
-                className="py-2 px-4 hover:bg-blue-800 rounded transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Group Booking
-              </Link>
+              <Link to="/flights" className="py-2 px-4 hover:bg-blue-800 rounded transition-colors" onClick={() => setIsMenuOpen(false)}>Flights</Link>
+              <Link to="/hotels" className="py-2 px-4 hover:bg-blue-800 rounded transition-colors" onClick={() => setIsMenuOpen(false)}>{hotelsLabel}</Link>
+              <Link to="/cars" className="py-2 px-4 hover:bg-blue-800 rounded transition-colors" onClick={() => setIsMenuOpen(false)}>{carsLabel}</Link>
+              <Link to="/shop" className="py-2 px-4 hover:bg-blue-800 rounded transition-colors" onClick={() => setIsMenuOpen(false)}>Shop</Link>
+              <Link to="/group-booking" className="py-2 px-4 hover:bg-blue-800 rounded transition-colors" onClick={() => setIsMenuOpen(false)}>Group Booking</Link>
               {state.currentUser?.role === 'administrator' && (
-                <Link
-                  to="/admin"
-                  className="py-2 px-4 hover:bg-blue-800 rounded transition-colors"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Admin Dashboard
-                </Link>
+                <Link to="/admin" className="py-2 px-4 hover:bg-blue-800 rounded transition-colors" onClick={() => setIsMenuOpen(false)}>Admin Dashboard</Link>
+              )}
+              {state.currentUser?.role === 'content_administrator' && (
+                <Link to="/content" className="py-2 px-4 hover:bg-blue-800 rounded transition-colors" onClick={() => setIsMenuOpen(false)}>Content</Link>
+              )}
+              {state.currentUser?.role === 'tenant_employee' && (
+                <Link to="/tenant" className="py-2 px-4 hover:bg-blue-800 rounded transition-colors" onClick={() => setIsMenuOpen(false)}>Tenant</Link>
               )}
               {state.currentUser && (
-                <Link
-                  to="/cockpit"
-                  className="py-2 px-4 hover:bg-blue-800 rounded transition-colors"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  My Cockpit
-                </Link>
+                <Link to="/cockpit" className="py-2 px-4 hover:bg-blue-800 rounded transition-colors" onClick={() => setIsMenuOpen(false)}>My Cockpit</Link>
               )}
               {state.currentUser ? (
                 <button
-                  onClick={() => {
-                    handleLogout();
-                    setIsMenuOpen(false);
-                  }}
+                  onClick={() => { handleLogout(); setIsMenuOpen(false); }}
                   className="text-left py-2 px-4 hover:bg-blue-800 rounded transition-colors"
                 >
                   Sign Out
                 </button>
               ) : (
-                <Link
-                  to="/login"
-                  className="py-2 px-4 hover:bg-blue-800 rounded transition-colors"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Sign In
-                </Link>
+                <Link to="/login" className="py-2 px-4 hover:bg-blue-800 rounded transition-colors" onClick={() => setIsMenuOpen(false)}>Sign In</Link>
               )}
             </nav>
           </div>

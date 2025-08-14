@@ -61,7 +61,7 @@ export function RegisterPage() {
           seatPreference: 'Window' as const,
           mealPreference: 'Non-Vegetarian' as const,
           language: 'en' as const,
-          currency: 'USD' as const,
+          currency: 'INR' as const,
           notifications: {
             email: true,
             sms: true,

@@ -22,6 +22,8 @@ export function AddFlightPage() {
     availableSeats: '',
   });
 
+  const nowMin = new Date().toISOString().slice(0,16);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -145,6 +147,7 @@ export function AddFlightPage() {
                   name="departureTime"
                   value={formData.departureTime}
                   onChange={handleChange}
+                  min={nowMin}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 />
@@ -159,6 +162,7 @@ export function AddFlightPage() {
                   name="arrivalTime"
                   value={formData.arrivalTime}
                   onChange={handleChange}
+                  min={formData.departureTime || nowMin}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 />
