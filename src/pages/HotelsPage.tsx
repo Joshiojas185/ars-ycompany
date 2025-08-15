@@ -286,7 +286,7 @@
 
 
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { SearchBar } from '../components/common/SearchBar';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
@@ -474,7 +474,7 @@ export function HotelsPage() {
                             <span>{hotel.location}</span>
                           </div>
                           <div className="flex items-center space-x-1 mb-3">
-                            {[...Array(hotel.rating)].map((_, i) => (
+                            {[...Array(Math.min(5, Math.max(0, Math.round(hotel.rating))))].map((_, i) => (
                               <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />
                             ))}
                           </div>

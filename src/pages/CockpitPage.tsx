@@ -38,6 +38,57 @@ export function CockpitPage() {
     });
   };
 
+  // Helper function to determine if a trip is completed
+  const isTripCompleted = (booking: any) => {
+    const now = new Date();
+    
+    if (booking.type === 'flight') {
+      const arrivalTime = new Date(booking.item.arrivalTime);
+      return arrivalTime < now;
+    }
+    
+    if (booking.type === 'hotel') {
+      const checkOut = new Date(booking.item.checkOut);
+      return checkOut < now;
+    }
+    
+    if (booking.type === 'car') {
+      const dropoffDate = new Date(booking.item.dropoffDate);
+      return dropoffDate < now;
+    }
+    
+    // For products, consider them completed after booking date + 30 days
+    const bookingDate = new Date(booking.bookingDate);
+    const completionDate = new Date(bookingDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+    return completionDate < now;
+  };
+
+  // Get completed trips for travel history
+  const completedTrips = state.bookings.filter(booking => 
+    booking.status === 'confirmed' && isTripCompleted(booking)
+  );
+
+  // Get active bookings (not completed)
+  const activeBookings = state.bookings.filter(booking => 
+    booking.status === 'confirmed' && !isTripCompleted(booking)
+  );
+
+  // Helper function to get completion date for display
+  const getCompletionDate = (booking: any) => {
+    if (booking.type === 'flight') {
+      return new Date(booking.item.arrivalTime);
+    }
+    if (booking.type === 'hotel') {
+      return new Date(booking.item.checkOut);
+    }
+    if (booking.type === 'car') {
+      return new Date(booking.item.dropoffDate);
+    }
+    // For products, return booking date + 30 days
+    const bookingDate = new Date(booking.bookingDate);
+    return new Date(bookingDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+  };
+
   const handleRebooking = async (originalId: string, newDate: string) => {
     const originalBooking = state.bookings.find(b => b.id === originalId);
     if (!originalBooking) return;
@@ -182,7 +233,16 @@ export function CockpitPage() {
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center">
               <div className="bg-orange-100 p-3 rounded-full"><Calendar className="h-6 w-6 text-orange-600" /></div>
-              <div className="ml-4"><div className="text-2xl font-bold text-gray-900">{state.bookings.length}</div><div className="text-sm text-gray-600">Total Bookings</div></div>
+              <div className="ml-4"><div className="text-2xl font-bold text-gray-900">{activeBookings.length}</div><div className="text-sm text-gray-600">Active Bookings</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex items-center">
+              <div className="bg-green-100 p-3 rounded-full"><Calendar className="h-6 w-6 text-green-600" /></div>
+              <div className="ml-4"><div className="text-2xl font-bold text-gray-900">{completedTrips.length}</div><div className="text-sm text-gray-600">Completed Trips</div></div>
             </div>
           </div>
         </div>
@@ -206,10 +266,18 @@ export function CockpitPage() {
             {activeTab === 'overview' && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-                  {state.bookings.length > 0 ? (
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
+                    <button 
+                      onClick={() => setActiveTab('bookings')} 
+                      className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                    >
+                      View All
+                    </button>
+                  </div>
+                  {activeBookings.length > 0 ? (
                     <div className="space-y-4">
-                      {state.bookings.slice(0, 3).map((booking) => (
+                      {activeBookings.slice(0, 3).map((booking) => (
                         <div key={booking.id} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
                           <div className="bg-blue-100 p-2 rounded-full text-blue-600">{getBookingIcon(booking.type)}</div>
                           <div className="flex-1">
@@ -229,18 +297,52 @@ export function CockpitPage() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-gray-600">No recent activity</p>
+                    <p className="text-gray-600">No active bookings at the moment</p>
                   )}
                 </div>
+
+                {completedTrips.length > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900">Recently Completed</h3>
+                      <button 
+                        onClick={() => setActiveTab('history')} 
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                      >
+                        View All
+                      </button>
+                    </div>
+                    <div className="space-y-4">
+                      {completedTrips.slice(0, 2).map((booking) => (
+                        <div key={booking.id} className="flex items-center space-x-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                          <div className="bg-green-100 p-2 rounded-full text-green-600">{getBookingIcon(booking.type)}</div>
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900">
+                              {booking.type === 'flight' && `Flight ${(booking.item as any).flightNumber}`}
+                              {booking.type === 'hotel' && (booking.item as any).name}
+                              {booking.type === 'car' && `${(booking.item as any).brand} ${(booking.item as any).model}`}
+                              {booking.type === 'product' && (booking.item as any).name}
+                            </div>
+                            <div className="text-sm text-gray-600">Completed on {format(getCompletionDate(booking), 'MMM dd, yyyy')}</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-medium text-gray-900">Rs. {booking.totalAmount}</div>
+                            <div className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Completed</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
             {activeTab === 'bookings' && (
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">All Bookings</h3>
-                {state.bookings.length > 0 ? (
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Active Bookings</h3>
+                {activeBookings.length > 0 ? (
                   <div className="space-y-4">
-                    {state.bookings.map((booking) => (
+                    {activeBookings.map((booking) => (
                       <div key={booking.id} className="border border-gray-200 rounded-lg p-6">
                         <div className="flex items-start justify-between">
                           <div className="flex items-start space-x-4">
@@ -288,7 +390,7 @@ export function CockpitPage() {
                 ) : (
                   <div className="text-center py-12">
                     <Plane className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No bookings yet</h3>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No active bookings</h3>
                     <p className="text-gray-600 mb-4">Start planning your next adventure!</p>
                     <button onClick={() => navigate('/flights')} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors">Book a Flight</button>
                   </div>
@@ -299,11 +401,91 @@ export function CockpitPage() {
             {activeTab === 'history' && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Travel History</h3>
-                <div className="text-center py-12">
-                  <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Travel History</h3>
-                  <p className="text-gray-600">Your completed trips will appear here</p>
-                </div>
+                {completedTrips.length > 0 ? (
+                  <div className="space-y-4">
+                    {completedTrips.map((booking) => (
+                      <div key={booking.id} className="border border-gray-200 rounded-lg p-6 bg-gray-50">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start space-x-4">
+                            <div className="bg-green-100 p-3 rounded-full text-green-600">{getBookingIcon(booking.type)}</div>
+                            <div>
+                              <h4 className="font-semibold text-gray-900 mb-1">
+                                {booking.type === 'flight' && `Flight ${(booking.item as any).flightNumber}`}
+                                {booking.type === 'hotel' && (booking.item as any).name}
+                                {booking.type === 'car' && `${(booking.item as any).brand} ${(booking.item as any).model}`}
+                                {booking.type === 'product' && (booking.item as any).name}
+                              </h4>
+                              <div className="text-sm text-gray-600 space-y-1">
+                                {booking.type === 'flight' && (
+                                  <>
+                                    <div className="flex items-center space-x-2">
+                                      <MapPin className="h-4 w-4" />
+                                      <span>{(booking.item as any).origin.code} → {(booking.item as any).destination.code}</span>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <Clock className="h-4 w-4" />
+                                      <span>Completed: {format(getCompletionDate(booking), 'MMM dd, yyyy HH:mm')}</span>
+                                    </div>
+                                  </>
+                                )}
+                                {booking.type === 'hotel' && (
+                                  <>
+                                    <div className="flex items-center space-x-2">
+                                      <MapPin className="h-4 w-4" />
+                                      <span>{(booking.item as any).location}</span>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <Clock className="h-4 w-4" />
+                                      <span>Completed: {format(getCompletionDate(booking), 'MMM dd, yyyy HH:mm')}</span>
+                                    </div>
+                                  </>
+                                )}
+                                {booking.type === 'car' && (
+                                  <>
+                                    <div className="flex items-center space-x-2">
+                                      <MapPin className="h-4 w-4" />
+                                      <span>{(booking.item as any).pickupLocation} → {(booking.item as any).dropoffLocation}</span>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <Clock className="h-4 w-4" />
+                                      <span>Completed: {format(getCompletionDate(booking), 'MMM dd, yyyy HH:mm')}</span>
+                                    </div>
+                                  </>
+                                )}
+                                <div>Booking ID: {booking.id}</div>
+                                <div>Booked: {format(new Date(booking.bookingDate), 'MMM dd, yyyy')}</div>
+                                {booking.type === 'product' && (
+                                  <div className="flex items-center space-x-2">
+                                    <Clock className="h-4 w-4" />
+                                    <span>Completed: {format(getCompletionDate(booking), 'MMM dd, yyyy HH:mm')}</span>
+                                  </div>
+                                )}
+                                <div className="text-green-600 font-medium">✓ Trip Completed</div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-xl font-bold text-gray-900 mb-2">Rs. {booking.totalAmount}</div>
+                            <div className="inline-flex px-3 py-1 text-sm font-medium rounded-full bg-green-100 text-green-800 mb-3">Completed</div>
+                            <button 
+                              onClick={() => setRebookingModal({ isOpen: true, booking })} 
+                              className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2"
+                            >
+                              <RotateCcw className="h-4 w-4" />
+                              <span>Rebook</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No completed trips yet</h3>
+                    <p className="text-gray-600">Your completed trips will appear here once they're finished</p>
+                  </div>
+                )}
               </div>
             )}
 
