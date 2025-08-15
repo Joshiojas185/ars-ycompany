@@ -1,0 +1,16 @@
+{
+  "name": "YCompany Travel",
+  "short_name": "YCompany",
+  "description": "Your trusted travel companion for flights, hotels, cars, and more",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}
